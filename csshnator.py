@@ -40,8 +40,9 @@ def main(argv):
     nrows = int(nrows)
     ncols = int(ncols)
 
-    nrows = 3
-    ncols = 3
+    # TODO remove this
+    nrows = 5
+    ncols = 5
 
     #Construct layout
     cssh_layout = {
@@ -56,10 +57,12 @@ def main(argv):
     rowparent = 'window0'
     for row in range(1, nrows):
         splitpos = height/nrows
+        splitratio = float(1.0/(nrows + 1 - row))
         cssh_layout['row' + str(row)] = {
                     'type': 'VPaned',
                     'order': min(row-1,1),
                     'position': splitpos,
+                    'ratio': splitratio,
                     'parent': rowparent,
                 }
         rowparent = 'row' + str(row)
