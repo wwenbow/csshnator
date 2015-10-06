@@ -41,63 +41,87 @@ def main(argv):
     ncols = int(ncols)
 
     # TODO remove this
-    nrows = 5
-    ncols = 5
+    nrows = 6
+    ncols = 6
 
     #Construct layout
+    vpane_name  = 'vpane'
+    hpane_name  = 'hpane'
+    term_name   = 'term'
+    window_name = 'window'
+
     cssh_layout = {
-            'window0': {
-                    'position': '0:0',
-                    'type': 'Window',
-                    'parent': "",
-                    'size': '1366, 768'
+            window_name + '0': {
+                'position': '0:0',
+                'type': 'Window',
+                'parent': "",
+                'size': '1366, 768'
                 }
             }
 
-    rowparent = 'window0'
-    for row in range(1, nrows):
-        splitpos = height/nrows
-        splitratio = float(1.0/(nrows + 1 - row))
-        cssh_layout['row' + str(row)] = {
-                    'type': 'VPaned',
-                    'order': min(row-1,1),
-                    'position': splitpos,
-                    'ratio': splitratio,
-                    'parent': rowparent,
+    # VPaned/ Horizontal splits
+    paneparent = window_name + '0'
+    for vpane in range(0, nrows - 1):
+        panepos = height/nrows # not used as far as I can tell
+        paneratio = float(1.0/(nrows - vpane)) # 1/n ... 1/3,1/2
+        panename = vpane_name + str(vpane);
+        cssh_layout[panename] = {
+                'type': 'VPaned',
+                'order': min(vpane,1), #first pane order 0, all others order 1
+                'position': panepos,
+                'ratio': paneratio,
+                'parent': paneparent,
                 }
-        rowparent = 'row' + str(row)
-        colparent = rowparent
-        nchild_col = 1
-        if (row == nrows-1):
-            nchild_col = 2
-        for child_col in range(0, nchild_col):
-            cssh_layout['term' + str(row) + str(child_col)] = {
+        paneparent = panename
+
+    # HPaned / Veritcal Split
+    for row in range(0, nrows):
+        # First split, parent is VPaned
+        order = 0
+        paneparent = vpane_name + str(row)
+        if (row == (nrows - 1)): # last row order is 1 last row parent is second to last
+            order = 1
+            paneparent = vpane_name + str(row - 1)
+        panepos = width/ncols
+        paneratio = float(1.0/(ncols))
+        panename = hpane_name + str(row) + str(0); #hpaned00 ~ hpanedn0
+        cssh_layout[panename] = {
+                'type': 'HPaned',
+                'position': panepos,
+                'ratio': paneratio,
+                'order': order,
+                'parent': paneparent,
+                }
+        # Other panes parent is previous pane
+        paneparent = panename
+        for hpane in range(1, ncols - 1):
+            panepos = width/ncols
+            paneratio = float(1.0/(ncols - hpane))
+            panename = hpane_name + str(row) + str(hpane); #hpaned00 ~ hpanednn
+            cssh_layout[panename] = {
+                    'type': 'HPaned',
+                    'position': panepos,
+                    'ratio': paneratio,
+                    'order': 1,
+                    'parent': paneparent,
+                    }
+            paneparent = panename
+
+    # Child terminals parents are Hpanes
+    for row in range(0, nrows):
+        for col in range(0, ncols):
+            order = 0
+            termparent = hpane_name + str(row) + str(col)
+            if (col == (ncols - 1)): #last col order 1 and col-1 parent
+                order = 1
+                termparent = hpane_name + str(row) + str(col - 1)
+            term = term_name + str(row) + str(col)
+            cssh_layout[term] = {
                     'profile': 'default',
                     'type': 'Terminal',
-                    'order': child_col,
-                    'parent': rowparent,
+                    'order': order,
+                    'parent': termparent,
                     }
-            print cssh_layout
-        #    for col in range(1, ncols):
-        #        splitpos = width/ncols
-        #        cssh_layout['col' + str(row) + str(col)] = {
-        #                    'type': 'HPaned',
-        #                    'position': splitpos,
-        #                    'order': child_col,
-        #                    'parent': colparent,
-        #                }
-        #        colparent = 'col' + str(row) + str(col)
-        #        nchild_term = 1
-        #        if (col == ncols-1):
-        #            nchild_term= 2
-        #        for child_term in range(0, nchild_col):
-        #            cssh_layout['term' + str(row) + str(col) + str(child_term)] = {
-        #                        'profile': 'default',
-        #                        'type': 'Terminal',
-        #                        'order': child_term,
-        #                        'parent': colparent,
-        #                    }
-        #            print cssh_layout
 
 
 
