@@ -1,10 +1,20 @@
+#!/usr/bin/env python
 import gtk, sys, getopt, math, subprocess
 from configobj.configobj import ConfigObj
 from os.path import expanduser
 
 def main(argv):
+    #Check terminator version first
+    out = subprocess.check_output(["terminator", "-v"])
+    terminator_ver = float(out.split()[1])
+    if (terminator_ver < 0.98):
+        print 'Terminator version is too low'
+        print 'Please install version 0.98 or greater'
+        sys.exit(2)
+
     login = ''
     cluster_name = ''
+
     try:
         opts, args = getopt.getopt(argv,"hl:c:",["login=","cluster="])
     except getopt.GetoptError:
@@ -12,12 +22,16 @@ def main(argv):
         sys.exit(2)
     for opt, arg in opts:
         if opt == '-h':
-            print 'test.py -l <login> -c <cluster>'
+            print 'csshnator.py -l <login> -c <cluster>'
             sys.exit()
         elif opt in ("-l", "--login"):
             login = arg
         elif opt in ("-c", "--cluster"):
             cluster_name = arg
+
+    if (cluster_name == ''):
+        print 'csshnator.py -l <login> -c <cluster>'
+        sys.exit(2)
 
     home = expanduser("~")
     window = gtk.Window()
@@ -28,7 +42,7 @@ def main(argv):
     height = gtk.gdk.screen_height()
 
     terminator_config = ConfigObj(home + '/.config/terminator/config');
-    cssh_config = ConfigObj('.csshnatorrc');
+    cssh_config = ConfigObj(home + '/.csshnatorrc');
 
     cluster_nodes = cssh_config[cluster_name].split()
     nnodes = len(cluster_nodes)
@@ -110,14 +124,19 @@ def main(argv):
     node_ind = 0;
     for row in range(0, nrows):
         for col in range(0, ncols):
-            node = cluster_nodes[node_ind] #get the node for this terminal
-            order = 0
-            termparent = hpane_name + str(row) + str(col) #parent is hpane
-            command = 'ssh ' + login + '@' + node #ssh command
-            #command = 'echo ' + login + '@' + node  + ' && bash '#for debugging
             if (node_ind >= nnodes):
                 command = 'exit' #exit the terminal if there is no node for this
+            else:
+                node = cluster_nodes[node_ind] #get the node for this terminal
+                node_ind += 1
+                command = 'echo CSSHNATOR started &&'
+                command += 'echo BroadCast All default At+A &&'
+                command += 'echo connecting to ' + login + '@' + node + ' &&' #ssh command
+                command += 'ssh ' + login + '@' + node #ssh command
+                #command = 'echo ' + login + '@' + node  + ' && bash '#for debugging
 
+            order = 0
+            termparent = hpane_name + str(row) + str(col) #parent is hpane
             if (col == (ncols - 1)): #last col order 1 and col-1 parent
                 order = 1
                 termparent = hpane_name + str(row) + str(col - 1)
@@ -135,7 +154,7 @@ def main(argv):
     configname = 'cssh_config_' + cluster_name
     terminator_config['layouts'][configname] = cssh_layout
     terminator_config.write()
-    subprocess.call(["terminator", "-l", "cssh_config_tmp"])
+    subprocess.call(["terminator", "-l", configname])
 
     #Clean up
     #del terminator_config['layouts']['cssh_config_tmp']
