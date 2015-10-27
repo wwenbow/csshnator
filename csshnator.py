@@ -8,7 +8,7 @@ def main(argv):
     try:
         opts, args = getopt.getopt(argv,"hl:c:",["login=","cluster="])
     except getopt.GetoptError:
-        print 'test.py -l <login> -c <cluster>'
+        print 'csshnator.py -l <login> -c <cluster>'
         sys.exit(2)
     for opt, arg in opts:
         if opt == '-h':
@@ -40,9 +40,9 @@ def main(argv):
     nrows = int(nrows)
     ncols = int(ncols)
 
-    # TODO remove this
-    nrows = 6
-    ncols = 6
+    # TODO calculate geometry better so don't need to create extra splits for
+    # less than 3 nodes
+    ncols = max(ncols, 2) #atlease 2 columns to make geometry easier
 
     #Construct layout
     vpane_name  = 'vpane'
@@ -55,7 +55,6 @@ def main(argv):
                 'position': '0:0',
                 'type': 'Window',
                 'parent': "",
-                'size': '1366, 768'
                 }
             }
 
@@ -108,31 +107,39 @@ def main(argv):
             paneparent = panename
 
     # Child terminals parents are Hpanes
+    node_ind = 0;
     for row in range(0, nrows):
         for col in range(0, ncols):
+            node = cluster_nodes[node_ind] #get the node for this terminal
             order = 0
-            termparent = hpane_name + str(row) + str(col)
+            termparent = hpane_name + str(row) + str(col) #parent is hpane
+            command = 'ssh ' + login + '@' + node #ssh command
+            #command = 'echo ' + login + '@' + node  + ' && bash '#for debugging
+            if (node_ind >= nnodes):
+                command = 'exit' #exit the terminal if there is no node for this
+
             if (col == (ncols - 1)): #last col order 1 and col-1 parent
                 order = 1
                 termparent = hpane_name + str(row) + str(col - 1)
+
             term = term_name + str(row) + str(col)
             cssh_layout[term] = {
+                    'command': command,
                     'profile': 'default',
                     'type': 'Terminal',
                     'order': order,
                     'parent': termparent,
                     }
 
-
-
     #Write to config and launch terminator
-    terminator_config['layouts']['cssh_config_tmp'] = cssh_layout
+    configname = 'cssh_config_' + cluster_name
+    terminator_config['layouts'][configname] = cssh_layout
     terminator_config.write()
     subprocess.call(["terminator", "-l", "cssh_config_tmp"])
 
     #Clean up
-    del terminator_config['layouts']['cssh_config_tmp']
-    terminator_config.write()
+    #del terminator_config['layouts']['cssh_config_tmp']
+    #terminator_config.write()
 
 if __name__ == "__main__":
     main(sys.argv[1:])
