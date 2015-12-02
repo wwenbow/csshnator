@@ -56,6 +56,7 @@ def main(argv):
 
     # TODO calculate geometry better so don't need to create extra splits for
     # less than 3 nodes
+    nrows = max(nrows, 2) #atlease 2 rows to make geometry easier
     ncols = max(ncols, 2) #atlease 2 columns to make geometry easier
 
     #Construct layout
