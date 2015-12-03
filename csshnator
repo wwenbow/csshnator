@@ -155,7 +155,7 @@ def main(argv):
     configname = 'cssh_config_' + cluster_name
     terminator_config['layouts'][configname] = cssh_layout
     terminator_config.write()
-    subprocess.call(["terminator", "-l", configname])
+    subprocess.Popen(["terminator", "-l", configname])
 
     #Clean up
     #del terminator_config['layouts']['cssh_config_tmp']
